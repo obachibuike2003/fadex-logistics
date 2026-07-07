@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Track Package | FadEx Logistics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{
+  --navy:#040d1f;--deep:#071332;--mid:#0b1f50;
+  --electric:#1d6fff;--sky:#4da6ff;--ice:#a8d8ff;--white:#f0f6ff;
+  --glass:rgba(255,255,255,0.04);--border:rgba(77,166,255,0.18);
+  --glow:rgba(29,111,255,0.35);--green:#22c55e;
+  --ff-head:'Syne',sans-serif;--ff-body:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--ff-body);background:var(--navy);color:var(--white);min-height:100vh;overflow-x:hidden;}
+
+/* ── STARFIELD ── */
+#sf{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;width:100%;z-index:1000;
+  background:rgba(4,13,31,.92);backdrop-filter:blur(20px);
+  box-shadow:0 1px 0 var(--border);padding:16px 0;
+}
+.nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 40px;}
+.logo-wrap{display:flex;align-items:center;gap:12px;text-decoration:none;}
+.logo-icon{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--electric),var(--sky));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px var(--glow);}
+.logo-name{font-family:var(--ff-head);font-size:20px;font-weight:800;background:linear-gradient(90deg,var(--sky),#fff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-tagline{font-size:10px;color:var(--ice);opacity:.7;letter-spacing:1px;text-transform:uppercase;}
+.nav-back{display:flex;align-items:center;gap:8px;color:var(--ice);text-decoration:none;font-family:var(--ff-head);font-size:13px;font-weight:600;opacity:.7;transition:all .2s;padding:8px 18px;border-radius:50px;border:1px solid var(--border);}
+.nav-back:hover{opacity:1;color:var(--sky);border-color:rgba(77,166,255,.4);background:rgba(29,111,255,.08);}
+
+/* ── WRAP ── */
+.page-wrap{max-width:1280px;margin:0 auto;padding:110px 40px 60px;position:relative;z-index:1;}
+
+/* ── HEADER ── */
+.track-header{text-align:center;margin-bottom:48px;animation:heroIn .9s cubic-bezier(.16,1,.3,1) both;}
+@keyframes heroIn{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
+.track-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(29,111,255,.15);border:1px solid rgba(77,166,255,.3);padding:7px 18px;border-radius:50px;font-size:12px;font-weight:500;color:var(--sky);letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+.track-header h1{font-family:var(--ff-head);font-size:clamp(32px,5vw,58px);font-weight:800;letter-spacing:-.5px;margin-bottom:12px;}
+.track-header h1 span{background:linear-gradient(90deg,var(--sky),#fff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.track-header p{color:var(--ice);opacity:.6;font-size:16px;}
+
+/* ── SEARCH BOX ── */
+.search-box{
+  background:var(--glass);border:1px solid var(--border);
+  border-radius:24px;padding:32px 40px;margin-bottom:40px;
+  position:relative;overflow:hidden;animation:heroIn .9s .15s cubic-bezier(.16,1,.3,1) both;
+}
+.search-box::before{content:'';position:absolute;top:-1px;left:60px;right:60px;height:1px;background:linear-gradient(90deg,transparent,var(--electric),transparent);}
+.search-row{display:flex;gap:12px;}
+.track-input{flex:1;padding:18px 24px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:#fff;font-size:16px;font-family:var(--ff-body);transition:border-color .25s,background .25s;outline:none;letter-spacing:.5px;}
+.track-input::placeholder{color:rgba(168,216,255,.35);}
+.track-input:focus{border-color:rgba(77,166,255,.6);background:rgba(29,111,255,.08);}
+.track-btn{padding:18px 36px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--electric),var(--sky));color:#fff;font-family:var(--ff-head);font-size:14px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:transform .25s,box-shadow .25s;white-space:nowrap;box-shadow:0 4px 20px var(--glow);}
+.track-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--glow);}
+.track-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+.search-hint{margin-top:14px;font-size:13px;color:var(--ice);opacity:.4;}
+.search-hint i{color:var(--electric);}
+
+/* ── SCANNING ── */
+.scan-overlay{display:none;text-align:center;padding:60px 0;}
+.scan-ring{width:80px;height:80px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--electric);animation:spin360 1s linear infinite;margin:0 auto 20px;}
+@keyframes spin360{to{transform:rotate(360deg);}}
+.scan-text{font-family:var(--ff-head);font-size:16px;color:var(--sky);animation:pulse-opacity 1.5s ease-in-out infinite;}
+@keyframes pulse-opacity{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ── ERROR ── */
+.error-box{display:none;text-align:center;padding:60px 0;}
+.error-icon{font-size:60px;margin-bottom:16px;}
+.error-box h3{font-family:var(--ff-head);font-size:22px;margin-bottom:10px;}
+.error-box p{color:var(--ice);opacity:.5;font-size:15px;}
+
+/* ── RESULTS ── */
+.results-section{display:none;animation:fadeUp .5s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── LIVE BANNER ── */
+.live-banner{display:none;align-items:center;gap:10px;justify-content:center;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:12px;padding:10px 20px;margin-bottom:24px;font-family:var(--ff-head);font-size:13px;font-weight:700;color:var(--green);letter-spacing:.5px;text-transform:uppercase;}
+.live-banner.active{display:flex;}
+.live-pulse{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;position:relative;}
+.live-pulse::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--green);opacity:.6;animation:ripple 1.5s linear infinite;}
+@keyframes ripple{0%{transform:scale(.8);opacity:.8;}100%{transform:scale(2.2);opacity:0;}}
+
+/* ══════════════════════════════════
+   STAGES BAR
+══════════════════════════════════ */
+.stages-wrap{
+  background:var(--glass);border:1px solid var(--border);
+  border-radius:20px;padding:32px 40px 28px;
+  margin-bottom:20px;position:relative;overflow:hidden;
+}
+.stages-wrap::before{content:'';position:absolute;top:-1px;left:40px;right:40px;height:1px;background:linear-gradient(90deg,transparent,var(--electric),transparent);}
+.stages-label{font-family:var(--ff-head);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--sky);margin-bottom:32px;}
+
+.stages-track{display:flex;align-items:flex-start;position:relative;}
+
+.stage-item{display:flex;flex-direction:column;align-items:center;min-width:80px;}
+
+.stage-connector{
+  flex:1;height:3px;margin-top:20px;
+  background:rgba(77,166,255,.12);
+  border-radius:2px;position:relative;overflow:hidden;
+}
+.stage-connector-fill{
+  position:absolute;top:0;left:0;bottom:0;width:0%;
+  transition:width 1.2s cubic-bezier(.4,0,.2,1);
+  border-radius:2px;
+}
+.stage-connector.done .stage-connector-fill{
+  width:100%;
+  background:linear-gradient(90deg,#059669,var(--green));
+}
+.stage-connector.active .stage-connector-fill{
+  width:55%;
+  background:linear-gradient(90deg,var(--green),var(--electric));
+}
+.stage-connector.active::after{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(77,166,255,.5) 50%,transparent 100%);
+  animation:scanMove 1.8s linear infinite;
+}
+@keyframes scanMove{0%{transform:translateX(-100%);}100%{transform:translateX(200%);}}
+
+/* Stage nodes */
+.stage-node{
+  width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;position:relative;transition:all .5s ease;
+}
+.stage-node.done{
+  background:linear-gradient(135deg,#059669,var(--green));
+  border:2.5px solid rgba(34,197,94,.5);
+  box-shadow:0 0 20px rgba(34,197,94,.35);
+  color:#fff;
+}
+.stage-node.active{
+  background:linear-gradient(135deg,var(--electric),var(--sky));
+  border:2.5px solid rgba(77,166,255,.6);
+  box-shadow:0 0 28px var(--glow);
+  color:#fff;
+}
+.stage-node.active::after{
+  content:'';position:absolute;inset:-7px;border-radius:50%;
+  border:2px solid rgba(77,166,255,.45);
+  animation:nodeRipple 1.8s ease-out infinite;
+}
+.stage-node.active::before{
+  content:'';position:absolute;inset:-14px;border-radius:50%;
+  border:1px solid rgba(77,166,255,.2);
+  animation:nodeRipple 1.8s .5s ease-out infinite;
+}
+@keyframes nodeRipple{0%{transform:scale(.9);opacity:.9;}100%{transform:scale(1.7);opacity:0;}}
+.stage-node.inactive{background:rgba(255,255,255,.03);border:2px solid rgba(77,166,255,.12);color:rgba(168,216,255,.25);}
+
+.stage-label{
+  margin-top:12px;font-family:var(--ff-head);font-size:11px;font-weight:700;
+  letter-spacing:.4px;text-align:center;white-space:nowrap;line-height:1.3;
+}
+.stage-label.done{color:var(--green);}
+.stage-label.active{color:var(--sky);}
+.stage-label.inactive{color:rgba(168,216,255,.28);}
+
+.stage-sub{font-size:10px;margin-top:3px;text-align:center;color:rgba(168,216,255,.35);}
+.stage-sub.done{color:rgba(34,197,94,.6);}
+.stage-sub.active{color:rgba(77,166,255,.6);animation:pulse-opacity 2s ease-in-out infinite;}
+
+/* ── MAIN LAYOUT ── */
+.tracking-layout{display:grid;grid-template-columns:330px 1fr;gap:20px;}
+
+/* ── ORDER PANEL ── */
+.order-panel{background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:28px;}
+.status-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:50px;font-family:var(--ff-head);font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:20px;}
+.status-pending{background:rgba(255,193,7,.15);color:#ffc107;border:1px solid rgba(255,193,7,.3);}
+.status-in-transit{background:rgba(29,111,255,.2);color:var(--sky);border:1px solid rgba(77,166,255,.3);}
+.status-delivered{background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.3);}
+.status-loading{background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.3);}
+.panel-title{font-family:var(--ff-head);font-size:14px;font-weight:700;color:var(--sky);margin-bottom:18px;}
+.detail-row{display:flex;justify-content:space-between;align-items:flex-start;padding:11px 0;border-bottom:1px solid rgba(77,166,255,.07);gap:12px;}
+.detail-row:last-child{border-bottom:none;}
+.dl{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--sky);flex-shrink:0;}
+.dv{font-size:13px;color:var(--ice);opacity:.8;text-align:right;}
+
+/* Progress bar */
+.prog-wrap{padding-top:16px;border-top:1px solid rgba(77,166,255,.07);margin-top:6px;}
+.prog-header{display:flex;justify-content:space-between;margin-bottom:8px;font-size:12px;color:var(--ice);opacity:.6;}
+.prog-track{height:6px;background:rgba(77,166,255,.1);border-radius:3px;overflow:hidden;}
+.prog-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--electric),var(--sky));
+  transition:width 1.2s ease;position:relative;overflow:hidden;
+}
+.prog-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:shimmer 2s infinite;}
+@keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+
+/* ── MAP ── */
+.map-panel{border-radius:20px;overflow:hidden;border:1px solid var(--border);min-height:440px;position:relative;}
+#trackMap{height:100%;min-height:440px;}
+.map-badge{
+  position:absolute;top:12px;left:12px;z-index:500;
+  background:rgba(4,13,31,.85);border:1px solid var(--border);
+  backdrop-filter:blur(10px);border-radius:10px;padding:7px 14px;
+  font-family:var(--ff-head);font-size:11px;font-weight:700;
+  color:var(--sky);letter-spacing:.5px;text-transform:uppercase;
+  display:none;align-items:center;gap:7px;
+}
+.map-badge.show{display:flex;}
+.map-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1s infinite;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .tracking-layout{grid-template-columns:1fr;}
+  .stages-wrap{padding:24px 20px 20px;}
+  .page-wrap{padding:86px 20px 48px;}
+  .search-box{padding:24px 20px;}
+  .search-row{flex-direction:column;}
+  .nav-inner{padding:0 20px;}
+  .stage-item{min-width:60px;}
+  .stage-label{font-size:10px;}
+  .stage-node{width:38px;height:38px;font-size:14px;}
+  .stage-connector{margin-top:18px;}
+  .map-panel{min-height:320px;}
+  #trackMap{min-height:320px;}
+}
+@media(max-width:600px){
+  .nav-inner{padding:0 16px;}
+  .logo-tagline{display:none;}
+  .nav-back span{display:none;} /* show only arrow icon */
+  .nav-back{padding:8px 12px;}
+  .page-wrap{padding:80px 14px 40px;}
+  .track-header{margin-bottom:28px;}
+  .track-header h1{font-size:clamp(26px,8vw,42px);}
+  .track-header p{font-size:14px;}
+  .track-badge{font-size:11px;padding:6px 14px;}
+  .search-box{padding:20px 16px;border-radius:18px;margin-bottom:24px;}
+  .track-input{padding:15px 16px;font-size:15px;}
+  .track-btn{padding:15px 24px;font-size:13px;}
+  .search-hint{font-size:12px;}
+  /* Stages: compress on small phones */
+  .stages-wrap{padding:20px 14px 18px;border-radius:16px;}
+  .stages-label{font-size:10px;margin-bottom:24px;}
+  .stage-item{min-width:44px;}
+  .stage-node{width:32px;height:32px;font-size:12px;}
+  .stage-node.active::after{inset:-5px;}
+  .stage-node.active::before{inset:-10px;}
+  .stage-label{font-size:9px;margin-top:8px;}
+  .stage-sub{display:none;} /* hide sub-labels on tiny screens */
+  .stage-connector{margin-top:14px;}
+  /* Panel & map */
+  .order-panel{padding:20px 16px;border-radius:16px;}
+  .status-chip{font-size:11px;padding:7px 14px;}
+  .detail-row{padding:9px 0;}
+  .dl{font-size:10px;}
+  .dv{font-size:12px;}
+  .map-panel{min-height:260px;border-radius:16px;}
+  #trackMap{min-height:260px;}
+  /* Live banner */
+  .live-banner{font-size:11px;padding:8px 14px;border-radius:10px;}
+  .scan-overlay{padding:40px 0;}
+  .scan-ring{width:60px;height:60px;}
+}
+@media(max-width:380px){
+  .stage-label{display:none;} /* only icons visible on very small phones */
+  .stage-item{min-width:32px;}
+  .stage-node{width:28px;height:28px;font-size:11px;}
+  .stage-connector{margin-top:12px;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="sf"></canvas>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-inner">
+    <a href="client.html" class="logo-wrap">
+      <div class="logo-icon">✈</div>
+      <div>
+        <div class="logo-name">FadEx</div>
+        <div class="logo-tagline">You order, we deliver</div>
+      </div>
+    </a>
+    <a href="client.html" class="nav-back">
+      <i class="fas fa-arrow-left"></i><span>&nbsp; Back to Home</span>
+    </a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- HEADER -->
+  <div class="track-header">
+    <div class="track-badge"><div class="live-dot"></div>&nbsp; Real-Time GPS Tracking</div>
+    <h1>Track Your <span>Package</span></h1>
+    <p>Enter your FadEx tracking number for live shipment status and location.</p>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-box">
+    <div class="search-row">
+      <input type="text" class="track-input" id="trackingId"
+        placeholder="Enter tracking number — e.g. SWG123456789"
+        autocomplete="off" spellcheck="false"/>
+      <button class="track-btn" id="trackBtn" onclick="doTrack()">
+        <i class="fas fa-search"></i>&nbsp; Track Package
+      </button>
+    </div>
+    <p class="search-hint">
+      <i class="fas fa-info-circle"></i>&nbsp;
+      Try: SWG123456789 &middot; SWG987654321 &middot; SWG555444333
+    </p>
+  </div>
+
+  <!-- SCANNING -->
+  <div class="scan-overlay" id="scanOverlay">
+    <div class="scan-ring"></div>
+    <div class="scan-text">Scanning global network…</div>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error-box" id="errorBox">
+    <div class="error-icon">📦</div>
+    <h3>Tracking Number Not Found</h3>
+    <p>Please double-check your number and try again.</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-section" id="resultsSection">
+
+    <!-- Live banner -->
+    <div class="live-banner" id="liveBanner">
+      <div class="live-pulse"></div>
+      Live tracking active — position updates every 3 s
+    </div>
+
+    <!-- ════ STAGES BAR ════ -->
+    <div class="stages-wrap">
+      <div class="stages-label"><i class="fas fa-route"></i>&nbsp; Shipment Journey</div>
+      <div class="stages-track" id="stagesTrack"></div>
+    </div>
+
+    <!-- LAYOUT -->
+    <div class="tracking-layout">
+
+      <!-- Panel -->
+      <div class="order-panel">
+        <div class="status-chip" id="statusChip">—</div>
+        <div class="panel-title"><i class="fas fa-box-open"></i>&nbsp; Shipment Details</div>
+        <div class="detail-row"><span class="dl">Tracking #</span><span class="dv" id="dId">—</span></div>
+        <div class="detail-row"><span class="dl">Recipient</span><span class="dv" id="dName">—</span></div>
+        <div class="detail-row"><span class="dl">Service</span><span class="dv" id="dSvc">—</span></div>
+        <div class="detail-row"><span class="dl">Weight</span><span class="dv" id="dWt">—</span></div>
+        <div class="detail-row"><span class="dl">Origin</span><span class="dv" id="dOrigin">—</span></div>
+        <div class="detail-row"><span class="dl">Destination</span><span class="dv" id="dDest">—</span></div>
+        <div class="detail-row"><span class="dl">Est. Delivery</span><span class="dv" id="dEta">—</span></div>
+        <div class="prog-wrap">
+          <div class="prog-header"><span>Journey Progress</span><span id="dPct">0%</span></div>
+          <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div class="map-panel">
+        <div class="map-badge" id="mapBadge">
+          <div class="map-badge-dot"></div>
+          Live GPS
+        </div>
+        <div id="trackMap"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ── STARFIELD ── */
+(function(){
+  const c=document.getElementById('sf'),ctx=c.getContext('2d');
+  let W,H,stars=[];
+  function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}
+  function mkS(){stars=[];for(let i=0;i<150;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.1+.2,a:Math.random(),s:Math.random()*.4+.05});}
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    stars.forEach(s=>{s.a+=s.s*.007;if(s.a>1||s.a<0)s.s*=-1;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(168,216,255,${s.a*.55})`;ctx.fill();});
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',()=>{resize();mkS();});
+  resize();mkS();draw();
+})();
+
+/* ── DATA ── */
+const API_BASE='https://fadexlogisticsltd.org/api';
+
+const SAMPLES={
+  'SWG123456789':{id:'SWG123456789',customerName:'Maria Rodriguez',serviceType:'Express International',status:'in-transit',origin:{lat:40.7128,lng:-74.006,name:'New York JFK'},destination:{lat:18.4655,lng:-77.92,name:'Montego Bay, Jamaica'},currentPosition:{lat:25.7617,lng:-80.1918},weight:'2.5 kg',speed:650},
+  'SWG987654321':{id:'SWG987654321',customerName:'James Thompson',serviceType:'Medical Express',status:'delivered',origin:{lat:40.7128,lng:-74.006,name:'New York JFK'},destination:{lat:17.9357,lng:-76.7875,name:'Kingston, Jamaica'},currentPosition:{lat:17.9357,lng:-76.7875},weight:'0.8 kg',speed:650},
+  'SWG555444333':{id:'SWG555444333',customerName:'Sarah Williams',serviceType:'Standard International',status:'pending',origin:{lat:40.7128,lng:-74.006,name:'New York JFK'},destination:{lat:18.0179,lng:-76.8099,name:'Spanish Town, Jamaica'},currentPosition:{lat:40.7128,lng:-74.006},weight:'5.2 kg',speed:650}
+};
+
+/* ── STAGES CONFIG ── */
+const STAGES=[
+  {label:'Order Placed',     sub:'Received',       icon:'fa-box'},
+  {label:'Confirmed',        sub:'Verified',        icon:'fa-clipboard-check'},
+  {label:'In Transit',       sub:'En Route',        icon:'fa-plane'},
+  {label:'Out for Delivery', sub:'Final Mile',      icon:'fa-truck'},
+  {label:'Delivered',        sub:'Complete',        icon:'fa-check-double'},
+];
+
+function getStageIdx(order,pct){
+  if(order.status==='delivered')return 4;
+  if(order.status==='loading')  return 2;
+  if(order.status==='in-transit')return pct>=75?3:2;
+  return 1; // pending
+}
+
+function renderStages(order,pct){
+  const active=getStageIdx(order,pct);
+  let html='';
+  STAGES.forEach((s,i)=>{
+    const state=i<active?'done':i===active?'active':'inactive';
+    const ico=state==='done'?'fa-check':s.icon;
+    html+=`<div class="stage-item">
+      <div class="stage-node ${state}"><i class="fas ${ico}"></i></div>
+      <div class="stage-label ${state}">${s.label}</div>
+      <div class="stage-sub ${state}">${state==='active'?'<i class="fas fa-circle-notch fa-spin" style="font-size:9px"></i> '+s.sub:s.sub}</div>
+    </div>`;
+    if(i<STAGES.length-1){
+      const cs=i<active?'done':i===active?'active':'';
+      html+=`<div class="stage-connector ${cs}"><div class="stage-connector-fill"></div></div>`;
+    }
+  });
+  document.getElementById('stagesTrack').innerHTML=html;
+}
+
+/* ── MAP ── */
+let map=null,planeMk=null,origMk=null,destMk=null,route=null;
+
+function calcDist(a,b,c,d){
+  const R=6371,dL=(c-a)*Math.PI/180,dG=(d-b)*Math.PI/180;
+  const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dG/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function fmtP(p){if(!p)return'—';if(p.name&&p.name.trim())return p.name;if(typeof p.lat==='number')return`${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`;return'—';}
+
+function mkIcon(em,bg,sz=34){
+  return L.divIcon({html:`<div style="background:${bg};color:#fff;border-radius:50%;width:${sz}px;height:${sz}px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(sz*.55)}px;border:2.5px solid rgba(255,255,255,.8);box-shadow:0 4px 16px rgba(0,0,0,.5);">${em}</div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],className:''});
+}
+function mkPlane(sz=42){
+  return L.divIcon({
+    html:`<div style="position:relative;width:${sz}px;height:${sz}px;">
+      <div style="position:absolute;inset:-9px;border-radius:50%;border:2px solid rgba(34,197,94,.45);animation:nodeRipple 1.8s ease-out infinite;"></div>
+      <div style="position:absolute;inset:-18px;border-radius:50%;border:1px solid rgba(34,197,94,.2);animation:nodeRipple 1.8s .5s ease-out infinite;"></div>
+      <div style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border-radius:50%;width:${sz}px;height:${sz}px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(sz*.55)}px;border:2.5px solid rgba(255,255,255,.85);box-shadow:0 4px 24px rgba(34,197,94,.45);">✈</div>
+    </div>`,
+    iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],className:''
+  });
+}
+
+function initMap(order){
+  const c=[order.currentPosition.lat,order.currentPosition.lng];
+  if(!map){
+    map=L.map('trackMap',{zoomControl:true}).setView(c,4);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19}).addTo(map);
+  }
+  syncMarkers(order,true);
+}
+
+function syncMarkers(order,fit=false){
+  const ol=[order.origin.lat,order.origin.lng];
+  const dl=[order.destination.lat,order.destination.lng];
+  const cl=[order.currentPosition.lat,order.currentPosition.lng];
+
+  if(!origMk)origMk=L.marker(ol,{icon:mkIcon('🏭','#1d6fff',36)}).bindPopup(`<b>Origin</b><br>${fmtP(order.origin)}`).addTo(map);
+  else origMk.setLatLng(ol);
+
+  if(!destMk)destMk=L.marker(dl,{icon:mkIcon('📍','#ef4444',36)}).bindPopup(`<b>Destination</b><br>${fmtP(order.destination)}`).addTo(map);
+  else destMk.setLatLng(dl);
+
+  if(order.status==='in-transit'||order.status==='pending'){
+    const ico=order.status==='in-transit'?mkPlane():mkIcon('📦','#6366f1',36);
+    if(!planeMk)planeMk=L.marker(cl,{icon:ico}).bindPopup(`<b>Package</b><br>${order.id}`).addTo(map);
+    else{planeMk.setLatLng(cl);if(order.status==='in-transit')planeMk.setIcon(mkPlane());}
+  }else if(planeMk){map.removeLayer(planeMk);planeMk=null;}
+
+  const pts=order.status==='in-transit'?[ol,cl,dl]:[ol,dl];
+  if(!route)route=L.polyline(pts,{color:'#4da6ff',weight:3,opacity:.7,dashArray:'10,7'}).addTo(map);
+  else route.setLatLngs(pts);
+
+  if(fit){const g=L.featureGroup([origMk,destMk].filter(Boolean));map.fitBounds(g.getBounds().pad(.25));}
+}
+
+/* ── PANEL ── */
+let liveTimer=null,curOrder=null;
+
+function calcPct(o){
+  if(o.status==='delivered')return 100;
+  const tot=calcDist(o.origin.lat,o.origin.lng,o.destination.lat,o.destination.lng);
+  if(!tot)return 0;
+  const rem=calcDist(o.currentPosition.lat,o.currentPosition.lng,o.destination.lat,o.destination.lng);
+  return Math.max(0,Math.min(100,((tot-rem)/tot)*100));
+}
+
+function renderPanel(o){
+  const pct=calcPct(o);
+
+  const chip=document.getElementById('statusChip');
+  chip.className='status-chip status-'+o.status;
+  const lbl={pending:'⏳ Pending Pickup','in-transit':'✈ In Transit',loading:'⟳ Loading',delivered:'✓ Delivered'};
+  chip.innerHTML=(lbl[o.status]||o.status.toUpperCase())+(o.pendingNote?` — ${o.pendingNote}`:'');
+
+  document.getElementById('dId').textContent=o.id||'—';
+  document.getElementById('dName').textContent=o.customerName||'—';
+  document.getElementById('dSvc').textContent=o.serviceType||'—';
+  document.getElementById('dWt').textContent=o.weight||'—';
+  document.getElementById('dOrigin').textContent=fmtP(o.origin);
+  document.getElementById('dDest').textContent=fmtP(o.destination);
+  document.getElementById('dPct').textContent=pct.toFixed(1)+'%';
+  document.getElementById('progFill').style.width=pct+'%';
+
+  let eta='Processing…';
+  if(o.status==='in-transit'){
+    const rem=calcDist(o.currentPosition.lat,o.currentPosition.lng,o.destination.lat,o.destination.lng);
+    const h=rem/(o.speed||650);
+    eta=new Date(Date.now()+h*3600000).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  }else if(o.status==='delivered'){eta='✓ Delivered';}
+  document.getElementById('dEta').textContent=eta;
+
+  renderStages(o,pct);
+
+  const isLive=o.status==='in-transit';
+  document.getElementById('liveBanner').classList.toggle('active',isLive);
+  document.getElementById('mapBadge').classList.toggle('show',isLive);
+}
+
+function startLive(){
+  if(liveTimer)clearInterval(liveTimer);
+  if(curOrder.status!=='in-transit')return;
+  liveTimer=setInterval(()=>{
+    if(!curOrder||curOrder.status!=='in-transit')return;
+    const d=curOrder.destination,c=curOrder.currentPosition;
+    const dist=calcDist(c.lat,c.lng,d.lat,d.lng);
+    if(dist>5){
+      const spd=(curOrder.speed||650)/3600,mv=spd*3;
+      const br=Math.atan2(d.lng-c.lng,d.lat-c.lat);
+      curOrder.currentPosition={lat:c.lat+(mv/111)*Math.cos(br),lng:c.lng+(mv/(111*Math.cos(c.lat*Math.PI/180)))*Math.sin(br)};
+    }else{
+      curOrder.currentPosition=d;curOrder.status='delivered';
+      clearInterval(liveTimer);toast('Package delivered! 🎉','success');
+    }
+    renderPanel(curOrder);
+    syncMarkers(curOrder);
+  },3000);
+}
+
+async function doTrack(){
+  const id=document.getElementById('trackingId').value.trim().toUpperCase();
+  if(!id){toast('Please enter a tracking number.','warning');return;}
+
+  document.getElementById('resultsSection').style.display='none';
+  document.getElementById('errorBox').style.display='none';
+  document.getElementById('scanOverlay').style.display='block';
+  const btn=document.getElementById('trackBtn');
+  btn.disabled=true;
+  if(liveTimer){clearInterval(liveTimer);liveTimer=null;}
+
+  if(map){[origMk,destMk,planeMk,route].forEach(l=>{if(l)map.removeLayer(l);});origMk=destMk=planeMk=route=null;}
+
+  let order=null;
+  try{
+    const r=await fetch(`${API_BASE}/orders/${encodeURIComponent(id)}`,{headers:{'Accept':'application/json'},cache:'no-store'});
+    if(r.ok)order=await r.json();
+  }catch(e){}
+  if(!order&&SAMPLES[id])order=JSON.parse(JSON.stringify(SAMPLES[id]));
+
+  document.getElementById('scanOverlay').style.display='none';
+  btn.disabled=false;
+
+  if(!order){document.getElementById('errorBox').style.display='block';return;}
+
+  curOrder=order;
+  renderPanel(order);
+
+  const rs=document.getElementById('resultsSection');
+  rs.style.display='block';
+  rs.style.animation='none';void rs.offsetWidth;rs.style.animation='fadeUp .5s ease both';
+
+  initMap(order);
+  if(order.status==='in-transit')startLive();
+}
+
+/* Auto-load from ?id= or ?track= param */
+(function(){
+  const p=new URLSearchParams(location.search);
+  const id=p.get('id')||p.get('track');
+  if(id){document.getElementById('trackingId').value=id;doTrack();}
+})();
+
+document.getElementById('trackingId').addEventListener('keypress',e=>{if(e.key==='Enter')doTrack();});
+
+function toast(msg,type){
+  const el=document.createElement('div');
+  const c={success:'linear-gradient(135deg,#059669,#34d399)',warning:'linear-gradient(135deg,#d97706,#fbbf24)',error:'linear-gradient(135deg,#dc2626,#f87171)'};
+  el.style.cssText=`position:fixed;top:80px;right:20px;background:${c[type]||c.error};color:#fff;padding:14px 22px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:99999;font-weight:600;font-size:14px;max-width:320px;font-family:var(--ff-head);`;
+  el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='.3s';setTimeout(()=>el.remove(),300);},4000);
+}
+</script>
+</body>
+</html>

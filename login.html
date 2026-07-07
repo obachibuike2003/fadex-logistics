@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Login | FadEx</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0d47a1, #1976d2, #42a5f5);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      padding: 36px;
+      border-radius: 18px;
+      box-shadow: 0 30px 60px rgba(0,0,0,.25);
+    }
+
+    h1 {
+      text-align: center;
+      color: #0d47a1;
+      margin-bottom: 6px;
+    }
+
+    p {
+      text-align: center;
+      color: #607d8b;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #0d47a1;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: 2px solid #e3f2fd;
+      margin-bottom: 18px;
+      font-size: 15px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #1e88e5;
+      box-shadow: 0 0 0 4px rgba(30,136,229,.15);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #1976d2, #42a5f5);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(25,118,210,.35);
+    }
+
+    .error {
+      display: none;
+      background: #ffebee;
+      color: #c62828;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+    <h1>FadEx Admin</h1>
+    <p>Secure Dashboard Login</p>
+
+    <div class="error" id="errorBox">Invalid credentials</div>
+
+    <label>Password</label>
+    <input id="password" type="password" placeholder="••••••••" />
+
+    <button onclick="login()">🔐 Login</button>
+  </div>
+
+  <script>
+    async function login() {
+      const password = document.getElementById('password').value.trim();
+      const errorBox = document.getElementById('errorBox');
+
+      errorBox.style.display = 'none';
+
+      if (!password) {
+        errorBox.textContent = 'Enter password';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      try {
+        const res = await fetch('https://fadexlogisticsltd.org/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        if (!res.ok) throw new Error();
+
+        const data = await res.json();
+
+        // ✅ store login token
+        localStorage.setItem('admin_token', data.token);
+
+        // ✅ redirect to admin dashboard
+        window.location.href = 'admin.html';
+
+      } catch {
+        errorBox.textContent = 'Invalid password';
+        errorBox.style.display = 'block';
+      }
+    }
+  </script>
+
+</body>
+</html>
