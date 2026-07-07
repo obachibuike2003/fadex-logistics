@@ -1,9 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import json, os, datetime, threading
+import os, datetime, json
 import hashlib
 import secrets
+from contextlib import contextmanager
+from psycopg2.pool import SimpleConnectionPool
+from dotenv import load_dotenv
 
+load_dotenv()
 
 ADMIN_PASSWORD_HASH = hashlib.sha256(b"9050").hexdigest()
 
@@ -13,24 +17,36 @@ ACTIVE_TOKENS = set()
 app = Flask(__name__)
 CORS(app)  # allow your Admin/Client HTML to call this API
 
-DB_FILE = "orders.json"
-DB_LOCK = threading.Lock()
+DATABASE_URL = os.environ["DATABASE_URL"]
+pool = SimpleConnectionPool(1, 10, DATABASE_URL)
 
-# ---------- tiny JSON "DB" helpers ----------
-def load_orders():
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r") as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return {}
-    return {}
 
-def save_orders(data):
-    tmp = DB_FILE + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(data, f, indent=2)
-    os.replace(tmp, DB_FILE)
+@contextmanager
+def db():
+    conn = pool.getconn()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        pool.putconn(conn)
+
+
+def init_db():
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS orders (
+                    id TEXT PRIMARY KEY,
+                    data JSONB NOT NULL
+                )
+            """)
+
+
+init_db()
+
 
 def now_iso():
     return datetime.datetime.utcnow().isoformat()
@@ -96,9 +112,13 @@ def create_order():
     data.setdefault("speed", 50)
     data.setdefault("createdAt", datetime.datetime.utcnow().isoformat() + "Z")
 
-    orders = load_orders()
-    orders[data["id"]] = data
-    save_orders(orders)
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO orders (id, data) VALUES (%s, %s) "
+                "ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data",
+                (data["id"], json.dumps(data))
+            )
 
     return jsonify({"message": "Order created", "order": data}), 201
 
@@ -107,20 +127,25 @@ def create_order():
 @app.route("/api/orders", methods=["GET"])
 def list_orders():
     limit = max(1, min(int(request.args.get("limit", 200)), 1000))
-    with DB_LOCK:
-        orders = list(load_orders().values())
-    # newest first by createdAt
-    orders.sort(key=lambda o: o.get("createdAt", ""), reverse=True)
-    return jsonify(orders[:limit])
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT data FROM orders ORDER BY data->>'createdAt' DESC LIMIT %s",
+                (limit,)
+            )
+            rows = cur.fetchall()
+    return jsonify([r[0] for r in rows])
 
 # ---------- get / track ----------
 @app.route("/api/orders/<order_id>", methods=["GET"])
 def get_order(order_id):
-    with DB_LOCK:
-        order = load_orders().get(order_id)
-    if not order:
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT data FROM orders WHERE id = %s", (order_id,))
+            row = cur.fetchone()
+    if not row:
         return jsonify({"error": "Order not found"}), 404
-    return jsonify(order)
+    return jsonify(row[0])
 
 # alias that your client example mentioned
 @app.route("/api/track/<order_id>", methods=["GET"])
@@ -141,13 +166,16 @@ def set_speed(order_id):
     except Exception:
         return jsonify({"error": "Speed must be integer 1..1200"}), 400
 
-    with DB_LOCK:
-        orders = load_orders()
-        if order_id not in orders:
-            return jsonify({"error": "Order not found"}), 404
-        orders[order_id]["speed"] = speed
-        save_orders(orders)
-        return jsonify({"ok": True, "id": order_id, "speed": speed})
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE orders SET data = jsonb_set(data, '{speed}', %s::jsonb) WHERE id = %s RETURNING id",
+                (json.dumps(speed), order_id)
+            )
+            row = cur.fetchone()
+    if not row:
+        return jsonify({"error": "Order not found"}), 404
+    return jsonify({"ok": True, "id": order_id, "speed": speed})
 
 # ---------- update status (and optional note) ----------
 @app.route("/api/orders/<order_id>/status", methods=["PATCH"])
@@ -158,25 +186,28 @@ def set_status(order_id):
         return jsonify({"error": "Invalid status"}), 400
     pending_note = body.get("pendingNote", None)
 
-    with DB_LOCK:
-        orders = load_orders()
-        order = orders.get(order_id)
-        if not order:
-            return jsonify({"error": "Order not found"}), 404
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT data FROM orders WHERE id = %s FOR UPDATE", (order_id,))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({"error": "Order not found"}), 404
 
-        order["status"] = status
-        order["pendingNote"] = pending_note
+            order = row[0]
+            order["status"] = status
+            order["pendingNote"] = pending_note
 
-        # manage timestamps like your UI does
-        if status == "in-transit" and not order.get("startedAt"):
-            order["startedAt"] = now_iso()
-        if status == "pending":
-            order["startedAt"] = None
-        if status == "delivered":
-            order["completedAt"] = now_iso()
+            # manage timestamps like your UI does
+            if status == "in-transit" and not order.get("startedAt"):
+                order["startedAt"] = now_iso()
+            if status == "pending":
+                order["startedAt"] = None
+            if status == "delivered":
+                order["completedAt"] = now_iso()
 
-        save_orders(orders)
-        return jsonify({"ok": True, "order": order})
+            cur.execute("UPDATE orders SET data = %s WHERE id = %s", (json.dumps(order), order_id))
+
+    return jsonify({"ok": True, "order": order})
 
 # ---------- update current position ----------
 @app.route("/api/orders/<order_id>/position", methods=["PATCH"])
@@ -188,39 +219,51 @@ def set_position(order_id):
     except Exception:
         return jsonify({"error": "Provide numeric 'lat' and 'lng'"}), 400
 
-    with DB_LOCK:
-        orders = load_orders()
-        order = orders.get(order_id)
-        if not order:
-            return jsonify({"error": "Order not found"}), 404
-        order["currentPosition"] = {"lat": lat, "lng": lng}
-        save_orders(orders)
-        return jsonify({"ok": True, "currentPosition": order["currentPosition"]})
+    current_position = {"lat": lat, "lng": lng}
+
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE orders SET data = jsonb_set(data, '{currentPosition}', %s::jsonb) WHERE id = %s RETURNING id",
+                (json.dumps(current_position), order_id)
+            )
+            row = cur.fetchone()
+    if not row:
+        return jsonify({"error": "Order not found"}), 404
+    return jsonify({"ok": True, "currentPosition": current_position})
 
 # ---------- delete ----------
 @app.route("/api/orders/<order_id>", methods=["DELETE"])
 def delete_order(order_id):
-    with DB_LOCK:
-        orders = load_orders()
-        if order_id not in orders:
-            return jsonify({"error": "Order not found"}), 404
-        orders.pop(order_id)
-        save_orders(orders)
-        return jsonify({"ok": True, "deleted": order_id})
-    
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM orders WHERE id = %s RETURNING id", (order_id,))
+            row = cur.fetchone()
+    if not row:
+        return jsonify({"error": "Order not found"}), 404
+    return jsonify({"ok": True, "deleted": order_id})
+
 
 @app.route("/api/orders/<order_id>", methods=["PATCH"])
 def patch_order(order_id):
-    orders = load_orders()
-    if order_id not in orders:
-        return jsonify({"error": "Order not found"}), 404
     payload = request.json or {}
-    # allow updating nested fields, including adding name
-    for key in ["origin", "destination", "currentPosition", "status", "pendingNote", "speed", "startedAt", "completedAt"]:
-        if key in payload:
-            orders[order_id][key] = payload[key]
-    save_orders(orders)
-    return jsonify(orders[order_id])
+
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT data FROM orders WHERE id = %s FOR UPDATE", (order_id,))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({"error": "Order not found"}), 404
+
+            order = row[0]
+            # allow updating nested fields, including adding name
+            for key in ["origin", "destination", "currentPosition", "status", "pendingNote", "speed", "startedAt", "completedAt"]:
+                if key in payload:
+                    order[key] = payload[key]
+
+            cur.execute("UPDATE orders SET data = %s WHERE id = %s", (json.dumps(order), order_id))
+
+    return jsonify(order)
 
 
 # ---------- dev run ----------
