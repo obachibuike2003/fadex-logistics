@@ -14,8 +14,13 @@ ADMIN_PASSWORD_HASH = hashlib.sha256(b"9050").hexdigest()
 ACTIVE_TOKENS = set()
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)  # allow your Admin/Client HTML to call this API
+
+
+@app.route("/")
+def index():
+    return app.send_static_file("client.html")
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 pool = SimpleConnectionPool(1, 10, DATABASE_URL)
