@@ -274,4 +274,4 @@ def patch_order(order_id):
 # ---------- dev run ----------
 if __name__ == "__main__":
     # Gunicorn will run this as app:app in production; this is for local dev only.
-    app.run(host="127.0.0.1", port=3001, debug=True)
+    app.run(host="0.0.0.0", port=3001, debug=True)
