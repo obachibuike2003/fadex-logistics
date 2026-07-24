@@ -20,7 +20,7 @@ CORS(app)  # allow your Admin/Client HTML to call this API
 
 @app.route("/")
 def index():
-    return app.send_static_file("client.html")
+    return app.send_static_file("index.html")
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 pool = SimpleConnectionPool(1, 10, DATABASE_URL)
