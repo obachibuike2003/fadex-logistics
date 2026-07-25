@@ -4,6 +4,7 @@ import os, datetime, json
 import hashlib
 import secrets
 from contextlib import contextmanager
+from psycopg2 import OperationalError, InterfaceError
 from psycopg2.pool import SimpleConnectionPool
 from dotenv import load_dotenv
 
@@ -29,14 +30,18 @@ pool = SimpleConnectionPool(1, 10, DATABASE_URL)
 @contextmanager
 def db():
     conn = pool.getconn()
+    broken = False
     try:
         yield conn
         conn.commit()
+    except (OperationalError, InterfaceError):
+        broken = True
+        raise
     except Exception:
         conn.rollback()
         raise
     finally:
-        pool.putconn(conn)
+        pool.putconn(conn, close=broken)
 
 
 def init_db():
