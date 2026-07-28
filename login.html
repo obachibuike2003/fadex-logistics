@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <title>Admin Login | FadEx</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#0b1f50"/>
+  <link rel="icon" href="/assets/icons/favicon.ico"/>
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="FadEx"/>
 
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -139,6 +146,10 @@
         errorBox.textContent = 'Invalid password';
         errorBox.style.display = 'block';
       }
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
     }
   </script>
 
