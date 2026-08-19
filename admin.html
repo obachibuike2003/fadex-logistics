@@ -31,35 +31,72 @@ body{font-family:var(--ff-body);background:var(--navy);color:var(--white);}
 
 /* ══════════ RECEIPT MODAL ══════════ */
 .receipt-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65);z-index:2000;backdrop-filter:blur(6px);}
-.receipt-wrap{background:#fff;color:#111;width:720px;max-width:95vw;border-radius:16px;box-shadow:0 40px 100px rgba(0,0,0,.5);padding:28px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;}
-.r-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
-.r-head .circle{width:46px;height:46px;border-radius:50%;border:2px solid #0ea5e9;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-.r-head .circle img{width:70%;height:70%;object-fit:contain;}
-.r-brand{line-height:1.05;}
-.r-brand .name{font-size:20px;font-weight:800;color:#0d47a1;}
+.receipt-wrap{background:#fff;color:#111;width:720px;max-width:95vw;max-height:92vh;overflow-y:auto;border-radius:16px;box-shadow:0 40px 100px rgba(0,0,0,.5);padding:32px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;}
+
+.r-letterhead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.r-brand-block{display:flex;align-items:center;gap:14px;}
+.r-brand-block .circle{width:50px;height:50px;border-radius:50%;border:2px solid #0ea5e9;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.r-brand-block .circle img{width:70%;height:70%;object-fit:contain;}
+.r-brand{line-height:1.15;}
+.r-brand .name{font-size:21px;font-weight:800;color:#0d47a1;}
 .r-brand .motto{font-size:11px;color:#135d9e;letter-spacing:.2px;}
-.r-title{margin-left:auto;font-weight:800;font-size:18px;}
-.r-hr{border:0;border-top:1px dashed #c9c9c9;margin:14px 0;}
-.r-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin:10px 0 6px;}
-.r-label{color:#666;font-size:12px;}
-.r-val{font-weight:600;}
-.r-summary{margin-top:10px;border:1px solid #e6e6e6;border-radius:10px;overflow:hidden;}
-.r-row{display:grid;grid-template-columns:1fr auto;padding:10px 12px;}
+.r-meta{text-align:right;flex-shrink:0;}
+.r-meta-title{font-weight:800;font-size:15px;letter-spacing:1px;color:#0d47a1;margin-bottom:6px;}
+.r-meta-row{font-size:11.5px;color:#555;display:flex;gap:8px;justify-content:flex-end;white-space:nowrap;}
+.r-meta-row span{color:#888;}
+.r-meta-row b{color:#111;font-weight:700;}
+
+.r-hr{border:0;border-top:1px dashed #c9c9c9;margin:16px 0;}
+
+.r-status-bar{display:flex;align-items:center;gap:10px;background:#f4f7fb;border:1px solid #e3e9f2;border-radius:10px;padding:12px 16px;margin-bottom:18px;flex-wrap:wrap;}
+.r-status-label{font-size:11px;color:#667;text-transform:uppercase;letter-spacing:.5px;}
+.r-tracking-num{font-family:'Courier New',monospace;font-weight:800;font-size:16px;letter-spacing:1px;color:#0d1b3d;margin-right:auto;}
+.status-badge{padding:5px 14px;border-radius:50px;font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;}
+.status-badge.pending{background:#fef3c7;color:#92400e;}
+.status-badge.in-transit{background:#dbeafe;color:#1e40af;}
+.status-badge.loading{background:#ede9fe;color:#5b21b6;}
+.status-badge.delivered{background:#dcfce7;color:#166534;}
+
+.r-section{margin-bottom:16px;}
+.r-section-title{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0d47a1;margin-bottom:10px;}
+.r-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e6e6e6;border-radius:10px;overflow:hidden;}
+.r-field{padding:10px 14px;border-bottom:1px solid #eee;border-right:1px solid #eee;}
+.r-field:nth-child(2n){border-right:0;}
+.r-field-wide{grid-column:1 / -1;border-right:0;}
+.r-grid > *:last-child{border-bottom:0;}
+.r-label{color:#777;font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;}
+.r-val{font-weight:600;font-size:13.5px;color:#111;}
+
+.r-summary{margin:0 0 16px;border:1px solid #e6e6e6;border-radius:10px;overflow:hidden;}
+.r-row{display:grid;grid-template-columns:1fr auto;align-items:center;padding:10px 14px;gap:10px;}
 .r-row:nth-child(odd){background:#fafafa;}
-.r-row .r-label{color:#444;}
+.r-row .r-label{color:#444;font-size:12px;text-transform:none;letter-spacing:0;margin:0;}
 .r-row .r-val{font-weight:700;}
-.r-codes{display:flex;align-items:center;gap:14px;margin-top:14px;}
+.r-progress-wrap{display:flex;align-items:center;gap:10px;}
+.progress-bar{width:120px;height:6px;background:#e6e6e6;border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#1d6fff,#4da6ff);border-radius:3px;}
+
+.r-codes{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:6px;}
+.r-code-block{display:flex;flex-direction:column;align-items:center;gap:4px;}
 #barcodeSvg{width:100%;max-width:360px;}
 #qrcode{width:96px;height:96px;}
-.r-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+.r-code-caption{font-size:10px;color:#888;letter-spacing:.3px;}
+
+.r-footer{text-align:center;margin-top:6px;}
+.r-footer-thanks{font-weight:700;font-size:13px;color:#0d47a1;margin-bottom:4px;}
+.r-footer-contact{font-size:10.5px;color:#888;}
+
+.r-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
 .rbtn{border:0;border-radius:10px;padding:10px 18px;cursor:pointer;font-weight:700;font-size:14px;}
 .rbtn-primary{background:linear-gradient(135deg,var(--electric),var(--sky));color:#fff;}
 .rbtn-ghost{background:#f1f5f9;color:#334155;}
 @media print{
-  .receipt-modal,.r-actions{display:none !important;}
-  body{background:#fff;overflow:auto;}
-  .receipt-wrap{box-shadow:none;width:auto;max-width:none;border-radius:0;padding:0;}
-  @page{size:A5 portrait;margin:10mm;}
+  body *{visibility:hidden;}
+  .receipt-wrap,.receipt-wrap *{visibility:visible;}
+  .receipt-modal{position:static !important;inset:auto !important;background:none !important;backdrop-filter:none !important;display:block !important;}
+  .receipt-wrap{box-shadow:none;width:auto;max-width:none;max-height:none;overflow:visible;border-radius:0;padding:0;margin:0 auto;}
+  .r-actions{display:none !important;}
+  @page{size:A4 portrait;margin:14mm;}
 }
 
 /* ══════════ NAVBAR ══════════ */
@@ -354,35 +391,62 @@ body{font-family:var(--ff-body);background:var(--navy);color:var(--white);}
 <!-- ══════════ RECEIPT MODAL ══════════ -->
 <div class="receipt-modal" id="receiptModal" aria-hidden="true">
   <div class="receipt-wrap" role="dialog" aria-label="Shipment Receipt">
-    <div class="r-head">
-      <div class="circle">
-        <img id="Logo" src="assets/areoplane-logo.png" alt="Logo"/>
+    <div class="r-letterhead">
+      <div class="r-brand-block">
+        <div class="circle">
+          <img id="Logo" src="assets/areoplane-logo.png" alt="Logo"/>
+        </div>
+        <div class="r-brand">
+          <div class="name">FadEx Logistics</div>
+          <div class="motto">Delivering the world, safely &amp; fast</div>
+        </div>
       </div>
-      <div class="r-brand">
-        <div class="name">FadEx</div>
-        <div class="motto">Delivering the world, safely &amp; fast</div>
+      <div class="r-meta">
+        <div class="r-meta-title">SHIPMENT RECEIPT</div>
+        <div class="r-meta-row"><span>Receipt No.</span><b id="r_receiptNo">—</b></div>
+        <div class="r-meta-row"><span>Issued</span><b id="r_issued">—</b></div>
       </div>
-      <div class="r-title">RECEIPT</div>
     </div>
     <hr class="r-hr"/>
-    <div class="r-grid">
-      <div><div class="r-label">Tracking #</div><div class="r-val" id="r_tracking">—</div></div>
-      <div><div class="r-label">Status</div><div class="r-val" id="r_status">—</div></div>
-      <div><div class="r-label">Recipient</div><div class="r-val" id="r_recipient">—</div></div>
-      <div><div class="r-label">Phone</div><div class="r-val" id="r_phone">—</div></div>
-      <div><div class="r-label">Service</div><div class="r-val" id="r_service">—</div></div>
-      <div><div class="r-label">Weight</div><div class="r-val" id="r_weight">—</div></div>
-      <div><div class="r-label">Origin</div><div class="r-val" id="r_origin">—</div></div>
-      <div><div class="r-label">Destination</div><div class="r-val" id="r_destination">—</div></div>
-      <div><div class="r-label">Issued</div><div class="r-val" id="r_issued">—</div></div>
+    <div class="r-status-bar">
+      <span class="r-status-label">Tracking Number</span>
+      <span class="r-tracking-num" id="r_tracking">—</span>
+      <span class="status-badge" id="r_status">—</span>
+    </div>
+    <div class="r-section">
+      <div class="r-section-title">Shipment Details</div>
+      <div class="r-grid">
+        <div class="r-field"><div class="r-label">Recipient</div><div class="r-val" id="r_recipient">—</div></div>
+        <div class="r-field"><div class="r-label">Phone</div><div class="r-val" id="r_phone">—</div></div>
+        <div class="r-field"><div class="r-label">Service Type</div><div class="r-val" id="r_service">—</div></div>
+        <div class="r-field"><div class="r-label">Weight</div><div class="r-val" id="r_weight">—</div></div>
+        <div class="r-field r-field-wide"><div class="r-label">Origin</div><div class="r-val" id="r_origin">—</div></div>
+        <div class="r-field r-field-wide"><div class="r-label">Destination</div><div class="r-val" id="r_destination">—</div></div>
+      </div>
     </div>
     <div class="r-summary">
       <div class="r-row"><div class="r-label">Estimated Delivery</div><div class="r-val" id="r_eta">—</div></div>
-      <div class="r-row"><div class="r-label">Progress</div><div class="r-val" id="r_progress">—</div></div>
+      <div class="r-row">
+        <div class="r-label">Progress</div>
+        <div class="r-progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" id="r_progressFill"></div></div>
+          <div class="r-val" id="r_progress">—</div>
+        </div>
+      </div>
     </div>
     <div class="r-codes">
-      <svg id="barcodeSvg"></svg>
-      <div id="qrcode"></div>
+      <div class="r-code-block">
+        <svg id="barcodeSvg"></svg>
+      </div>
+      <div class="r-code-block r-code-qr">
+        <div id="qrcode"></div>
+        <div class="r-code-caption">Scan to track</div>
+      </div>
+    </div>
+    <hr class="r-hr"/>
+    <div class="r-footer">
+      <div class="r-footer-thanks">Thank you for shipping with FadEx Logistics.</div>
+      <div class="r-footer-contact">fadexlogisticsltd@outlook.com &nbsp;·&nbsp; This is a system-generated receipt and does not require a signature.</div>
     </div>
     <div class="r-actions">
       <button class="rbtn rbtn-primary" onclick="downloadReceipt('pdf')"><i class="fas fa-file-pdf"></i> Download PDF</button>
@@ -1042,12 +1106,15 @@ function showAlert(message, type='info') {
 function openReceipt(orderId) {
   const o = storage.orders.find(x=>x.id===orderId);
   if (!o) return;
+  document.getElementById('r_receiptNo').textContent  = `RCPT-${o.id}`;
   document.getElementById('r_tracking').textContent   = o.id;
-  document.getElementById('r_status').textContent     = o.status.toUpperCase();
+  const statusEl=document.getElementById('r_status');
+  statusEl.textContent  = (o.status||'').replace('-',' ');
+  statusEl.className    = `status-badge ${o.status||''}`;
   document.getElementById('r_recipient').textContent  = o.customerName||'—';
   document.getElementById('r_phone').textContent      = o.customerPhone||'—';
-  document.getElementById('r_service').textContent    = 'Fadex Logistics Courier Services';
-  document.getElementById('r_weight').textContent     = 'N/A';
+  document.getElementById('r_service').textContent    = o.serviceType||'Fadex Logistics Courier Services';
+  document.getElementById('r_weight').textContent     = o.weight||'N/A';
   document.getElementById('r_origin').textContent     = formatPlace(o.originName,o.origin);
   document.getElementById('r_destination').textContent= formatPlace(o.destinationName,o.destination);
   document.getElementById('r_issued').textContent     = new Date().toLocaleString();
@@ -1055,6 +1122,7 @@ function openReceipt(orderId) {
   const leftKm=calculateDistance(o.currentPosition[0],o.currentPosition[1],o.destination[0],o.destination[1]);
   const pct=Math.max(0,Math.min(100,((totalKm-leftKm)/Math.max(totalKm,1e-9))*100));
   document.getElementById('r_progress').textContent=`${pct.toFixed(1)}%`;
+  document.getElementById('r_progressFill').style.width=`${pct.toFixed(1)}%`;
   if (o.status==='delivered') { document.getElementById('r_eta').textContent='DELIVERED'; }
   else if (leftKm>1&&o.speed) { document.getElementById('r_eta').textContent=new Date(Date.now()+(leftKm/o.speed)*3600000).toLocaleString(); }
   else { document.getElementById('r_eta').textContent='—'; }
@@ -1117,10 +1185,7 @@ async function downloadReceipt(format='pdf') {
 function printReceipt() {
   const receipt=document.querySelector('.receipt-wrap');
   if (!receipt) return;
-  const w=window.open('','_blank','width=720,height=900');
-  w.document.write(`<html><head><title>Receipt</title><style>body{font-family:system-ui,sans-serif;background:#fff;color:#111;padding:20px;}.receipt-wrap{max-width:700px;margin:auto;}.r-hr{border:0;border-top:1px dashed #999;margin:14px 0;}.r-row{display:grid;grid-template-columns:1fr auto;padding:10px 12px;}.r-row:nth-child(odd){background:#fafafa;}</style></head><body>${receipt.outerHTML}</body></html>`);
-  w.document.close(); w.focus();
-  setTimeout(()=>{ w.print(); w.close(); },500);
+  window.print();
 }
 
 async function inlineLogo() {
