@@ -820,14 +820,36 @@ function startMovementSimulation(orderId) {
   }, UPDATE_INTERVAL_MS);
 }
 
+/* Every mutating request below must be confirmed by the server before the
+   admin UI reflects it as done — otherwise a failed write (network blip,
+   transient backend error) looks identical to a successful one here while
+   the client-facing pages, which always read fresh from the backend, never
+   see the change at all. */
+async function apiWrite(url, options) {
+  try {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      let msg = `Request failed (${res.status})`;
+      try { const j = await res.json(); if (j && j.error) msg = j.error; } catch(e){}
+      showToast(`<i class="fas fa-exclamation-triangle" style="color:var(--red)"></i> ${escapeHtml(msg)} — change NOT saved.`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    showToast('<i class="fas fa-exclamation-triangle" style="color:var(--red)"></i> Network error — change NOT saved. Try again.');
+    return false;
+  }
+}
+
 async function startDelivery(orderId) {
   const order = storage.orders.find(o => o.id === orderId);
   if (!order) return;
   if (order.status !== 'pending') return showToast('<i class="fas fa-exclamation-circle" style="color:var(--yellow)"></i> Order is not pending.');
-  await fetch(`${API_BASE}/orders/${order.id}/status`, {
+  const ok = await apiWrite(`${API_BASE}/orders/${order.id}/status`, {
     method:'PATCH', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ status:'in-transit' })
   });
+  if (!ok) return;
   order.status = 'in-transit'; order.startedAt = new Date().toISOString();
   saveOrdersToLocalStorage(); updateOrdersList(); updateSystemStatus();
   updateMapForOrder(order, { fit:false });
@@ -835,14 +857,15 @@ async function startDelivery(orderId) {
 }
 
 async function stopDelivery(orderId) {
-  if (storage.intervals[orderId]) { clearInterval(storage.intervals[orderId]); delete storage.intervals[orderId]; }
   const order = storage.orders.find(o => o.id === orderId); if (!order) return;
   let reason = prompt('Why are you stopping/pausing this order? (Shown to client)');
   if (reason !== null) reason = reason.trim();
-  await fetch(`${API_BASE}/orders/${order.id}/status`, {
+  const ok = await apiWrite(`${API_BASE}/orders/${order.id}/status`, {
     method:'PATCH', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ status:'pending', pendingNote: reason || null })
   });
+  if (!ok) return;
+  if (storage.intervals[orderId]) { clearInterval(storage.intervals[orderId]); delete storage.intervals[orderId]; }
   order.status = 'pending'; order.pendingNote = reason || null; order.startedAt = null;
   saveOrdersToLocalStorage(); updateOrdersList(); updateSystemStatus();
   showToast(`<i class="fas fa-pause-circle" style="color:var(--yellow)"></i> Order <strong>${orderId}</strong> paused${order.pendingNote?` — ${escapeHtml(order.pendingNote)}`:''}`);
@@ -854,10 +877,11 @@ async function editPendingNote(orderId) {
   let next = prompt('Edit pending reason (shown to client):', o.pendingNote || '');
   if (next === null) return;
   next = next.trim();
-  await fetch(`${API_BASE}/orders/${orderId}`, {
+  const ok = await apiWrite(`${API_BASE}/orders/${orderId}`, {
     method:'PATCH', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ pendingNote: next || null })
   });
+  if (!ok) return;
   o.pendingNote = next || null;
   saveOrdersToLocalStorage(); updateOrdersList(); updateSystemStatus();
   showToast(`<i class="fas fa-pencil-alt" style="color:var(--sky)"></i> Note updated for <strong>${orderId}</strong>`);
@@ -967,10 +991,11 @@ async function updateOrderSpeed(orderId) {
   const input = document.getElementById(`speed-${orderId}`);
   const val = parseInt(input.value, 10);
   if (isNaN(val) || val < 10 || val > 1200) { showToast('<i class="fas fa-exclamation-circle" style="color:var(--red)"></i> Enter 10–1200 km/h'); return; }
-  await fetch(`${API_BASE}/orders/${orderId}/speed`, {
+  const ok = await apiWrite(`${API_BASE}/orders/${orderId}/speed`, {
     method:'PATCH', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ speed:val })
   });
+  if (!ok) return;
   const o = storage.orders.find(x => x.id === orderId);
   if (o) { o.speed = val; saveOrdersToLocalStorage(); updateOrdersList(); updateSystemStatus(); }
   showToast(`<i class="fas fa-bolt" style="color:var(--sky)"></i> Speed for <strong>${orderId}</strong> set to <strong>${val} km/h</strong>`);
@@ -1041,7 +1066,8 @@ async function loadOrdersFromBackend() {
 
 async function deleteOrder(orderId) {
   if (!confirm(`Delete order ${orderId}? This cannot be undone.`)) return;
-  await fetch(`${API_BASE}/orders/${orderId}`, { method:'DELETE' });
+  const ok = await apiWrite(`${API_BASE}/orders/${orderId}`, { method:'DELETE' });
+  if (!ok) return;
   if (storage.intervals[orderId]) { clearInterval(storage.intervals[orderId]); delete storage.intervals[orderId]; }
   if (activeMarkers[orderId]) { try{map.removeLayer(activeMarkers[orderId]);}catch(e){} delete activeMarkers[orderId]; }
   if (activePolylines[orderId]) { try{map.removeLayer(activePolylines[orderId]);}catch(e){} delete activePolylines[orderId]; }
