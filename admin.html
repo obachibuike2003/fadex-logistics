@@ -251,6 +251,7 @@ body{font-family:var(--ff-body);background:var(--navy);color:var(--white);}
   border:1px solid var(--border);border-radius:8px;color:#fff;font-size:12px;outline:none;
 }
 .speed-row input[type=number]:focus{border-color:rgba(77,166,255,.5);}
+.speed-eta{font-size:11px;color:var(--ice);opacity:.7;margin:-4px 0 10px;}
 
 /* Status chip */
 .order-status{
@@ -893,6 +894,31 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
+function formatDuration(hours) {
+  if (hours < 1) return `${Math.max(1,Math.round(hours*60))} min`;
+  if (hours < 48) return `${hours.toFixed(1)} h`;
+  return `${(hours/24).toFixed(1)} days`;
+}
+
+function speedEtaText(order, speedVal) {
+  if (order.status === 'delivered') return 'Delivered — no ETA needed';
+  const v = parseInt(speedVal, 10);
+  if (!v || isNaN(v) || v < 10 || v > 1200) return 'Enter a speed between 10–1200 km/h';
+  const remKm = calculateDistance(order.currentPosition[0], order.currentPosition[1], order.destination[0], order.destination[1]);
+  const hours = remKm / v;
+  const eta = new Date(Date.now() + hours*3600000);
+  const etaStr = eta.toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  return `${remKm.toFixed(0)} km left · ${formatDuration(hours)} at ${v} km/h · ETA ${etaStr}`;
+}
+
+function previewSpeedEta(orderId) {
+  const order = storage.orders.find(o => o.id === orderId);
+  const input = document.getElementById(`speed-${orderId}`);
+  const etaEl = document.getElementById(`eta-${orderId}`);
+  if (!order || !input || !etaEl) return;
+  etaEl.textContent = speedEtaText(order, input.value);
+}
+
 function showTab(tab) {
   const isCreate = tab === 'create';
   document.getElementById('tabCreate').style.display = isCreate ? 'block' : 'none';
@@ -912,14 +938,14 @@ function updateOrdersList() {
     ordersList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--ice);opacity:.35;font-size:13px;"><i class="fas fa-inbox" style="font-size:32px;display:block;margin-bottom:10px;"></i>No orders yet</div>`;
     return;
   }
-  // Preserve an in-progress speed edit across the periodic re-render below,
-  // otherwise the 30s auto-refresh (and the 1s in-transit position tick)
-  // silently overwrites unsaved edits. Number inputs don't support
-  // selectionStart/setSelectionRange in Chrome/Safari (throws), so only
-  // value + focus are restored, not cursor position.
+  // Skip the rebuild entirely while a speed field is focused. The 1s
+  // in-transit position tick and the 30s auto-refresh both call this;
+  // rebuilding mid-typing destroys and recreates the input on every tick,
+  // which interrupts typing (a single arrow-click survives it, but typing
+  // several digits in a row doesn't). Other cards go briefly stale during
+  // the edit, which is a fine trade for the field actually being typeable.
   const active = document.activeElement;
-  const editingId = active && active.id && active.id.startsWith('speed-') ? active.id : null;
-  const editingVal = editingId ? active.value : null;
+  if (active && active.id && active.id.startsWith('speed-')) return;
 
   ordersList.innerHTML = '';
   storage.orders.forEach(order => {
@@ -939,9 +965,10 @@ function updateOrdersList() {
       <div class="order-route"><i class="fas fa-map-marker-alt" style="color:var(--electric);opacity:.6;margin-right:4px;"></i>${escapeHtml(order.originName||'Origin')} &rarr; ${escapeHtml(order.destinationName||'Destination')}</div>
       <div class="speed-row">
         <label for="speed-${order.id}">Speed (km/h)</label>
-        <input id="speed-${order.id}" type="number" min="10" max="1200" value="${order.speed||50}"/>
+        <input id="speed-${order.id}" type="number" min="10" max="1200" value="${order.speed||50}" oninput="previewSpeedEta('${order.id}')"/>
         <button class="btn btn-sm" onclick="updateOrderSpeed('${order.id}')"><i class="fas fa-bolt"></i> Update</button>
       </div>
+      <div class="speed-eta" id="eta-${order.id}">${speedEtaText(order, order.speed||50)}</div>
       <div class="order-status ${order.status}">${statusLabel(order)}</div>
       <div class="coordinates">
         <i class="fas fa-crosshairs" style="margin-right:4px;"></i>
@@ -954,14 +981,6 @@ function updateOrdersList() {
       </div>`;
     ordersList.appendChild(el);
   });
-
-  if (editingId) {
-    const restored = document.getElementById(editingId);
-    if (restored) {
-      restored.value = editingVal;
-      restored.focus();
-    }
-  }
 }
 
 function statusLabel(order) {
