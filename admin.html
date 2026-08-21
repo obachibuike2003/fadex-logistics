@@ -912,6 +912,13 @@ function updateOrdersList() {
     ordersList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--ice);opacity:.35;font-size:13px;"><i class="fas fa-inbox" style="font-size:32px;display:block;margin-bottom:10px;"></i>No orders yet</div>`;
     return;
   }
+  // Preserve an in-progress speed edit across the periodic re-render below,
+  // otherwise the 30s auto-refresh silently overwrites unsaved edits.
+  const active = document.activeElement;
+  const editingId = active && active.id && active.id.startsWith('speed-') ? active.id : null;
+  const editingVal = editingId ? active.value : null;
+  const editingSel = editingId ? [active.selectionStart, active.selectionEnd] : null;
+
   ordersList.innerHTML = '';
   storage.orders.forEach(order => {
     const el = document.createElement('div');
@@ -945,6 +952,15 @@ function updateOrdersList() {
       </div>`;
     ordersList.appendChild(el);
   });
+
+  if (editingId) {
+    const restored = document.getElementById(editingId);
+    if (restored) {
+      restored.value = editingVal;
+      restored.focus();
+      try { restored.setSelectionRange(editingSel[0], editingSel[1]); } catch(e){}
+    }
+  }
 }
 
 function statusLabel(order) {
