@@ -913,11 +913,13 @@ function updateOrdersList() {
     return;
   }
   // Preserve an in-progress speed edit across the periodic re-render below,
-  // otherwise the 30s auto-refresh silently overwrites unsaved edits.
+  // otherwise the 30s auto-refresh (and the 1s in-transit position tick)
+  // silently overwrites unsaved edits. Number inputs don't support
+  // selectionStart/setSelectionRange in Chrome/Safari (throws), so only
+  // value + focus are restored, not cursor position.
   const active = document.activeElement;
   const editingId = active && active.id && active.id.startsWith('speed-') ? active.id : null;
   const editingVal = editingId ? active.value : null;
-  const editingSel = editingId ? [active.selectionStart, active.selectionEnd] : null;
 
   ordersList.innerHTML = '';
   storage.orders.forEach(order => {
@@ -958,7 +960,6 @@ function updateOrdersList() {
     if (restored) {
       restored.value = editingVal;
       restored.focus();
-      try { restored.setSelectionRange(editingSel[0], editingSel[1]); } catch(e){}
     }
   }
 }
